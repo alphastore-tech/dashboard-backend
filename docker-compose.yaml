@@ -331,5 +331,12 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+  fastapi-app:
+    build: ./fastapi
+    depends_on: [postgres]
+    env_file: .env
+    ports:
+      - "8000:8000"
+
 volumes:
   postgres-db-volume:
