@@ -2,3 +2,5 @@ airflow.cfg
 logs/
 
 .env
+
+*.pyc
