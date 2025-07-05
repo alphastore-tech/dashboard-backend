@@ -2,6 +2,7 @@ from airflow.decorators import dag, task
 from pendulum import timezone, now
 import requests, pandas as pd
 import sqlalchemy as sa
+from sqlalchemy import text
 from dotenv import load_dotenv
 import os
 import json
@@ -49,8 +50,58 @@ def daily_kis_pnl_pipeline():
 
     @task
     def load_to_postgres(records):
-        engine = sa.create_engine("postgresql+psycopg2://...")
-        pd.DataFrame(records).to_sql("realized_pnl", engine, if_exists="append")
+        if not records:
+            return 0
+
+        df = pd.DataFrame.from_records(records)
+
+        db_url = os.getenv(
+            "KIS_DB_URL",                   # override에서 넣어둔 값
+            "postgresql+psycopg2://kis:kispass@kis-postgres:5432/kis",
+        )
+
+        engine = sa.create_engine(db_url, pool_pre_ping=True, future=True)
+
+        # 테이블이 없으면 생성
+        with engine.begin() as conn:
+            # realized_pnl 테이블 생성
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS realized_pnl (
+                    trad_dt VARCHAR(8),
+                    buy_amt NUMERIC(15,2),
+                    sll_amt NUMERIC(15,2),
+                    rlzt_pfls NUMERIC(15,2),
+                    fee NUMERIC(15,2),
+                    loan_int NUMERIC(15,2),
+                    tl_tax NUMERIC(15,2),
+                    pfls_rt NUMERIC(10,4),
+                    sll_qty1 NUMERIC(15,0),
+                    buy_qty1 NUMERIC(15,0),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+
+        # dtype 지정
+        dtype_map = {
+            'trad_dt': sa.String(8),
+            'buy_amt': sa.Numeric(15, 2),
+            'sll_amt': sa.Numeric(15, 2),
+            'rlzt_pfls': sa.Numeric(15, 2),
+            'fee': sa.Numeric(15, 2),
+            'loan_int': sa.Numeric(15, 2),
+            'tl_tax': sa.Numeric(15, 2),
+            'pfls_rt': sa.Numeric(10, 4),
+            'sll_qty1': sa.Numeric(15, 0),
+            'buy_qty1': sa.Numeric(15, 0)
+        }
+
+        with engine.begin() as conn:
+            df.to_sql(
+                "realized_pnl", conn, if_exists="append", index=False,
+                method="multi", chunksize=1_000, dtype=dtype_map
+            )
+
+        return len(records)
 
     @task
     def calc_cumulative_return():
