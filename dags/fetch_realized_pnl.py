@@ -13,50 +13,13 @@ from typing import List, Optional
 import pandas as pd
 import requests
 
+from kis_types import RequestHeader
+
 # ---------------------------------------------------------------------
-# 1) 데이터클래스 정의
+# 1) 데이터클래스 정의ㅈ
 #    (원본 헤더/파라미터 명의 하이픈은 파이썬 변수에 사용할 수 없으므로
 #     snake_case 로 바꾸고, 실제 HTTP 전송 시 키를 다시 원형으로 매핑)
 # ---------------------------------------------------------------------
-@dataclass
-class RequestHeader:
-    content_type: str            # Content-Type
-    authorization: str           # Bearer {access_token}
-    appkey: str
-    appsecret: str
-    tr_id: str                   # 거래 ID (예: TTTC8001R)
-    custtype: str                # 고객 타입 (P: 개인·B: 법인)
-    personalseckey: Optional[str] = None
-    tr_cont: Optional[str] = None
-    seq_no: Optional[str] = None
-    mac_address: Optional[str] = None
-    phone_number: Optional[str] = None
-    ip_addr: Optional[str] = None
-    hashkey: Optional[str] = None
-    gt_uid: Optional[str] = None
-
-    # HTTP 전송용 dict (키를 API 규격에 맞춰 변환)
-    def to_http_headers(self) -> dict[str, str]:
-        mapping = {
-            "content_type": "content-type",
-            "authorization": "authorization",
-            "appkey": "appkey",
-            "appsecret": "appsecret",
-            "personalseckey": "personalseckey",
-            "tr_id": "tr_id",
-            "tr_cont": "tr_cont",
-            "custtype": "custtype",
-            "seq_no": "seq_no",
-            "mac_address": "mac_address",
-            "phone_number": "phone_number",
-            "ip_addr": "ip_addr",
-            "hashkey": "hashkey",
-            "gt_uid": "gt_uid",
-        }
-        return {api_k: getattr(self, py_k)
-                for py_k, api_k in mapping.items()
-                if getattr(self, py_k) is not None}
-
 
 @dataclass
 class RequestQueryParam:

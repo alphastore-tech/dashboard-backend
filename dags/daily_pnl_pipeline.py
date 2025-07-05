@@ -1,35 +1,32 @@
 from airflow.decorators import dag, task
 from pendulum import timezone, now
-import requests, pandas as pd
+import pandas as pd
 import sqlalchemy as sa
 from sqlalchemy import text
 from dotenv import load_dotenv
 import os
 import json
 import boto3
-
-from kis_api import fetch_realized_pnl
+from fetch_realized_pnl import fetch_realized_pnl
+from utils.aws import _get_aws_secret
 
 load_dotenv()
 KST = timezone("Asia/Seoul")
 
-def _get_aws_secret(secret_id: str, region: str = "ap-northeast-2") -> str:
-    """
-    AWS Secrets Manager에서 문자열(또는 JSON)을 바로 가져온다.
-    """
-    client = boto3.client("secretsmanager", region_name=region)
-    resp = client.get_secret_value(SecretId=secret_id)
-    return resp["SecretString"]
 
 @dag(schedule="10 16 * * 1-5", start_date=KST.datetime(2025, 6, 30))
-def daily_kis_pnl_pipeline():
+def daily_pnl_pipeline():
 
     @task
     def fetch_daily_pnl():
         appkey = os.getenv("KIS_APP_KEY")
         appsecret = os.getenv("KIS_APP_SECRET")
-        # ① Secrets Manager 에서 access_token 불러오기
-        secret_raw  = _get_aws_secret(os.getenv("AWS_SECRET_ID"))
+    # ① Secrets Manager 에서 access_token 불러오기
+        print("appkey: ", appkey)
+        print("appsecret: ", appsecret)
+        print("aws_secret_id: ", os.getenv("AWS_SECRET_ID", ""))
+
+        secret_raw  = _get_aws_secret(os.getenv("AWS_SECRET_ID", ""))
         # Secret 값을 문자열 그대로 저장했다면 ↓ 한 줄로 끝.
         # access_token = secret_raw
         # JSON 형식 {"access_token": "..."} 로 저장했다면:
@@ -121,4 +118,4 @@ def daily_kis_pnl_pipeline():
     df = fetch_daily_pnl()
     load_to_postgres(df) >> calc_cumulative_return()
 
-dag = daily_kis_pnl_pipeline()
+dag = daily_pnl_pipeline()
