@@ -1,0 +1,6 @@
+1. AWS RDS db.t3.micro 인스턴스 생성
+2. SQL Table 정의
+3. MOCK Data 채워넣기
+4. DB 연결(조회, insert 등)
+5. AWS Lambda + EventBridge > 필요 API 구현
+6. backend prod 구현 및 CI/CD 구축
