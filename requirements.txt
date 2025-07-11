@@ -3,3 +3,4 @@ SQLAlchemy==2.0.41
 fastapi[all]==0.116.0
 requests==2.32.4
 boto3==1.39.4
+asyncpg==0.30.0
