@@ -78,51 +78,46 @@ async def insert_portfolio_data(
         table_name = f"daily_{account_type}_balance_kis_{account_number}"
 
         # 계좌 타입에 따라 다른 API 함수 호출
+        # 기본값 설정
+        nav = 0.0
+        cash = 0.0
+        unrealized_pnl = 0.0
+        realized_pnl = 0.0
+        net_cashflow = 0.0
+        fee = 0.0
         if account_type == "future":
             # 선물 계좌인 경우
-            futures_data = await get_futures_balance_settlement(date)
+            # KIS API는 YYYYMMDD 형식을 요구하므로 날짜 형식 변환
+            kis_date = date.replace("-", "")
+            futures_data = await get_futures_balance_settlement(kis_date)
+
+            # 디버깅을 위한 로그
+            print("KIS API Response:", futures_data)
 
             # API 응답에서 필요한 데이터 추출
-            output1 = futures_data.get("output1", {})
-            output2 = futures_data.get("output2", [])
+            output1 = futures_data.get("output1", [])  # 리스트로 변경
+            output2 = futures_data.get("output2", {})  # 딕셔너리로 변경
 
-            # 기본값 설정
-            nav = 0.0
-            cash = 0.0
-            unrealized_pnl = 0.0
-            realized_pnl = 0.0
-            net_cashflow = 0.0
-            fee = 0.0
-
-            # output1에서 데이터 추출 (잔고 정보)
-            if output1:
-                # NAV (총 평가금액)
-                nav = float(output1.get("tot_evlu_amt", 0))
-                # 현금
-                cash = float(output1.get("cash_amt", 0))
-                # 미실현손익
-                unrealized_pnl = float(output1.get("evlu_pfls_amt", 0))
+            # output2에서 데이터 추출 (잔고 정보)
+            if output2 and isinstance(output2, dict):
+                # NAV (총 평가금액) - opt_lqd_evlu_amt 사용
+                nav = float(output2.get("opt_lqd_evlu_amt", 0))
+                # 현금 - dnca_cash 사용
+                cash = float(output2.get("dnca_cash", 0))
                 # 수수료
-                fee = float(output1.get("fee_amt", 0))
+                fee = float(output2.get("fee", 0))
 
-            # output2에서 데이터 추출 (정산 정보)
-            if output2:
+            # output1에서 데이터 추출 (거래 정보)
+            if output1 and isinstance(output1, list):
                 total_realized_pnl = 0.0
-                total_net_cashflow = 0.0
 
-                for item in output2:
-                    # 실현손익
-                    realized_pnl_item = float(item.get("rlz_pfls_amt", 0))
+                for item in output1:
+                    # 실현손익 (trad_pfls_amt)
+                    realized_pnl_item = float(item.get("trad_pfls_amt", 0))
+
                     total_realized_pnl += realized_pnl_item
 
-                    # 순현금흐름 (매수/매도 금액 차이)
-                    buy_amt = float(item.get("buy_amt", 0))
-                    sell_amt = float(item.get("sell_amt", 0))
-                    net_cashflow_item = sell_amt - buy_amt
-                    total_net_cashflow += net_cashflow_item
-
                 realized_pnl = total_realized_pnl
-                net_cashflow = total_net_cashflow
 
         elif account_type == "spot":
             # 현물 계좌인 경우 - 현재는 기본값으로 설정
