@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any
 from fastapi import HTTPException
 
 from app.database.connection import get_db_connection
-from app.services.kis_api import get_futures_balance_settlement
+from app.services.kis_api import KisClient
 
 
 async def read_portfolio_data(
@@ -89,7 +89,10 @@ async def insert_portfolio_data(
             # 선물 계좌인 경우
             # KIS API는 YYYYMMDD 형식을 요구하므로 날짜 형식 변환
             kis_date = date.replace("-", "")
-            futures_data = await get_futures_balance_settlement(kis_date)
+
+            # KisClient 인스턴스 생성
+            client = KisClient()
+            futures_data = await client.get_futures_balance_settlement(kis_date)
 
             # 디버깅을 위한 로그
             print("KIS API Response:", futures_data)
