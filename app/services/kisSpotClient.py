@@ -100,3 +100,25 @@ class KisSpotClient:
             raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
     
+    def get_spot_balance_daily_profit(self, start_date: str, end_date: str) -> dict:
+        """
+        기간별손익일별합산조회
+        """
+        endpoint = "/uapi/domestic-stock/v1/trading/inquire-period-profit"
+        
+        headers = self._get_base_headers("TTTC8708R")
+        params = {
+            "ACNT_PRDT_CD": self.acnt_prdt_cd,  # 계좌상품코드
+            "CANO": self.cano,  # 종합계좌번호
+            "INQR_STRT_DT": start_date,  # 조회시작일자
+            "INQR_END_DT": end_date,  # 조회종료일자
+            "PDNO": "",  # 상품번호 (공란입력 시 전체)
+            "CTX_AREA_NK100": "",  # 연속조회키100       
+            "SORT_DVSN": "00",  # 정렬구분 (00: 최근 순)
+            "INQR_DVSN": "00",  # 조회구분
+            "CBLC_DVSN": "00",  # 잔고구분 (00: 전체)
+            "CTX_AREA_FK100": "",  # 연속조회검색조건100
+        }
+        
+        return self._make_api_request(endpoint, headers, params)
+

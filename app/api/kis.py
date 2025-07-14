@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from typing import Optional
 
 from app.services.kisClient import KisClient
+from app.services.kisSpotClient import KisSpotClient
 from app.crud.daily_future_balance import (
     insert_daily_future_balance,
     read_daily_future_balance,
@@ -9,6 +10,34 @@ from app.crud.daily_future_balance import (
 )
 
 router = APIRouter(prefix="/kis", tags=["kis"])
+
+
+@router.get("/spot/inquire-balance-daily-profit")
+def get_spot_inquire_balance_daily_profit_endpoint(
+    start_date: str,
+    end_date: str,
+    app_key: Optional[str] = None,
+    app_secret: Optional[str] = None,
+    domain: Optional[str] = None,
+    cano: Optional[str] = None,
+    acnt_prdt_cd: Optional[str] = None,
+    aws_secret_id: Optional[str] = None,
+):
+    """
+    주문처리 후 영업일 기준 오늘 종료시점 종목별 손익 조회
+    """
+    client = KisSpotClient(
+        app_key=app_key,
+        app_secret=app_secret,
+        domain=domain,
+        cano=cano,
+        acnt_prdt_cd=acnt_prdt_cd,
+        aws_secret_id=aws_secret_id
+    )
+    
+    return client.get_spot_balance_daily_profit(
+        start_date, end_date    
+    )
 
 
 @router.get("/futures/balance-settlement")
