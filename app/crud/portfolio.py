@@ -8,13 +8,17 @@ from app.services.kisClient import KisClient
 
 
 async def read_portfolio_data(
-    date: str, account_type: str = "future", account_number: str = "43037074"
+    start_date: str,
+    end_date: str,
+    account_type: str = "future",
+    account_number: str = "43037074",
 ) -> Optional[Dict[str, Any]]:
     """
     특정 날짜의 포트폴리오 데이터를 조회합니다.
 
     Args:
-        date: 조회할 날짜 (YYYY-MM-DD 형식)
+        start_date: 조회할 시작 날짜 (YYYY-MM-DD 형식)
+        end_date: 조회할 종료 날짜 (YYYY-MM-DD 형식)
         account_type: 계좌 타입 ("future" 또는 "spot")
         account_number: 계좌번호
 
@@ -24,49 +28,25 @@ async def read_portfolio_data(
     conn = await get_db_connection()
     try:
         # 테이블 이름 결정
-        table_name = f"daily_{account_type}_balance_kis_{account_number}"
+        table_name = f"daily_{account_type}_balance_kis"
 
         # 문자열 날짜를 datetime 객체로 변환
-        date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+        start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").date()
 
         query = f"""
-        SELECT date, nav, cash, unrealized_pnl, realized_pnl, net_cashflow, fee
+        SELECT date, futr_trad_pfls_amt
         FROM {table_name} 
-        WHERE date = $1
+        WHERE date BETWEEN $1 AND $2
         """
-        row = await conn.fetchrow(query, date_obj)
-
-        if row:
-            return {
-                "date": row["date"].strftime("%Y-%m-%d"),
-                "nav": float(row["nav"]),
-                "cash": float(row["cash"]) if row["cash"] else 0.0,
-                "unrealized_pnl": (
-                    float(row["unrealized_pnl"]) if row["unrealized_pnl"] else 0.0
-                ),
-                "realized_pnl": (
-                    float(row["realized_pnl"]) if row["realized_pnl"] else 0.0
-                ),
-                "net_cashflow": (
-                    float(row["net_cashflow"]) if row["net_cashflow"] else 0.0
-                ),
-                "fee": float(row["fee"]) if row["fee"] else 0.0,
-            }
-        return None
+        rows = await conn.fetch(query, start_date_obj, end_date_obj)
+        return rows
     finally:
         await conn.close()
 
 
 async def insert_portfolio_data(
-    date: str, 
-    account_type: str = "future", 
-    account_number: str = "43037074",
-    app_key: Optional[str] = None,
-    app_secret: Optional[str] = None,
-    domain: Optional[str] = None,
-    cano: Optional[str] = None,
-    acnt_prdt_cd: Optional[str] = None,
-    aws_secret_id: Optional[str] = None
+    date: str, account_type: str = "future", account_number: str = "43037074"
 ) -> Dict[str, Any]:
     """
     특정 날짜의 포트폴리오 데이터를 삽입합니다.
@@ -76,12 +56,6 @@ async def insert_portfolio_data(
         date: 삽입할 날짜 (YYYY-MM-DD 형식)
         account_type: 계좌 타입 ("future" 또는 "spot")
         account_number: 계좌번호
-        app_key: KIS API 앱 키
-        app_secret: KIS API 앱 시크릿
-        domain: KIS API 도메인
-        cano: 계좌번호
-        acnt_prdt_cd: 계좌상품코드
-        aws_secret_id: AWS 시크릿 ID
 
     Returns:
         삽입된 데이터 딕셔너리
@@ -105,14 +79,7 @@ async def insert_portfolio_data(
             kis_date = date.replace("-", "")
 
             # KisClient 인스턴스 생성
-            client = KisClient(
-                app_key=app_key,
-                app_secret=app_secret,
-                domain=domain,
-                cano=cano,
-                acnt_prdt_cd=acnt_prdt_cd,
-                aws_secret_id=aws_secret_id
-            )
+            client = KisClient()
             futures_data = await client.get_futures_balance_settlement(kis_date)
 
             # 디버깅을 위한 로그

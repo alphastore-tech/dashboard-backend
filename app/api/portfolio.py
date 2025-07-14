@@ -13,38 +13,43 @@ router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
 @router.get("/{date}")
 async def get_portfolio_data(
-    date: str, account_type: str = "future", account_number: str = "43037074"
+    start_date: str,
+    end_date: str,
+    account_type: str = "future",
+    account_number: str = "43037074",
 ):
     """
     특정 날짜의 포트폴리오 데이터를 조회합니다.
 
     Args:
-        date: 조회할 날짜 (YYYY-MM-DD 형식)
+        start_date: 조회할 시작 날짜 (YYYY-MM-DD 형식)
+        end_date: 조회할 종료 날짜 (YYYY-MM-DD 형식)
         account_type: 계좌 타입 ("future" 또는 "spot")
         account_number: 계좌번호
 
     Returns:
         포트폴리오 데이터 또는 404 에러
     """
-    data = await read_portfolio_data(date, account_type, account_number)
+    data = await read_portfolio_data(start_date, end_date, account_type, account_number)
     if data is None:
         raise HTTPException(
-            status_code=404, detail=f"No portfolio data found for date: {date}"
+            status_code=404,
+            detail=f"No portfolio data found for date: {start_date}~{end_date}",
         )
     return data
 
 
 @router.post("/{date}")
 async def create_portfolio_data(
-    date: str, 
-    account_type: str = "future", 
+    date: str,
+    account_type: str = "future",
     account_number: str = "43037074",
     app_key: Optional[str] = None,
     app_secret: Optional[str] = None,
     domain: Optional[str] = None,
     cano: Optional[str] = None,
     acnt_prdt_cd: Optional[str] = None,
-    aws_secret_id: Optional[str] = None
+    aws_secret_id: Optional[str] = None,
 ):
     """
     특정 날짜의 포트폴리오 데이터를 생성합니다.
@@ -79,15 +84,15 @@ async def create_portfolio_data(
         )
 
     return await insert_portfolio_data(
-        date, 
-        account_type, 
+        date,
+        account_type,
         account_number,
         app_key,
         app_secret,
         domain,
         cano,
         acnt_prdt_cd,
-        aws_secret_id
+        aws_secret_id,
     )
 
 
