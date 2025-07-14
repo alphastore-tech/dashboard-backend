@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.utils.mock_data import generate_daily
+from app.utils.mock_data import generate_daily_pnl, generate_monthly_pnl
 
 router = APIRouter(tags=["general"])
 
@@ -10,23 +10,17 @@ async def root():
     return {"message": "Hello World"}
 
 
-@router.get("/pnl")
-async def read_pnl(start_date: str, end_date: str):
-    # stmt = (
-    #     select(RealizedPNL)
-    #     .where(RealizedPNL.trade_date.between(start_date, end_date))
-    #     .order_by(RealizedPNL.trade_date)
-    # )
-    # result = (await session.execute(stmt)).scalars().all()
-    # if not result:
-    #     raise HTTPException(status_code=404, detail="No data for given range")
-    # return result
-    return generate_daily(10)
+@router.get("/pnl/daily")
+async def get_daily_pnl():
+    return generate_daily_pnl(30)
+
+@router.get("/pnl/monthly")
+async def get_monthly_pnl():
+    return generate_monthly_pnl()
 
 
-@router.get("/analysis")
-async def get_analysis():
-    # Mock data as fallback
+@router.get("/performance_metrics")
+async def get_performance_metrics():
     mock_analysis_metrics = [
         {"label": "Total Return", "value": "20.00%"},
         {"label": "CAGR(Annualized)", "value": "20.00%"},
