@@ -4,18 +4,30 @@ from typing import Optional, Dict, Any
 from fastapi import HTTPException
 
 from app.database.connection import get_db_connection
-from app.services.kis_api import KisClient
+from app.services.kisClient import KisClient
 from datetime import timezone, timedelta
 
 KST = timezone(timedelta(hours=9))
 
 
-async def insert_daily_future_balance() -> Dict[str, Any]:
+async def insert_daily_future_balance(
+    app_key: Optional[str] = None,
+    app_secret: Optional[str] = None,
+    domain: Optional[str] = None,
+    cano: Optional[str] = None,
+    acnt_prdt_cd: Optional[str] = None,
+    aws_secret_id: Optional[str] = None
+) -> Dict[str, Any]:
     """
     특정 날짜의 선물옵션 잔고 데이터를 KIS API에서 가져와서 daily_future_balance_kis 테이블에 삽입합니다.
 
     Args:
-        date: 삽입할 날짜 (YYYY-MM-DD 형식)
+        app_key: KIS API 앱 키
+        app_secret: KIS API 앱 시크릿
+        domain: KIS API 도메인
+        cano: 계좌번호
+        acnt_prdt_cd: 계좌상품코드
+        aws_secret_id: AWS 시크릿 ID
 
     Returns:
         삽입된 데이터 딕셔너리
@@ -25,7 +37,14 @@ async def insert_daily_future_balance() -> Dict[str, Any]:
         date_obj = datetime.now(KST).date()
 
         # KisClient 인스턴스 생성
-        client = KisClient()
+        client = KisClient(
+            app_key=app_key,
+            app_secret=app_secret,
+            domain=domain,
+            cano=cano,
+            acnt_prdt_cd=acnt_prdt_cd,
+            aws_secret_id=aws_secret_id
+        )
 
         # KIS API에서 잔고 데이터 가져오기
         balance_data = await client.get_futureoption_balance()
@@ -150,7 +169,7 @@ async def read_daily_future_balance(date: str) -> Optional[Dict[str, Any]]:
                 value = row[column]
                 if isinstance(value, Decimal):
                     result[column] = float(value)
-                elif isinstance(value, datetime.date):
+                elif hasattr(value, "strftime") and hasattr(value, "year"):  # datetime.date 객체인지 확인
                     result[column] = value.strftime("%Y-%m-%d")
                 else:
                     result[column] = value

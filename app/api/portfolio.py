@@ -1,5 +1,6 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
+from typing import Optional
 
 from app.crud.portfolio import (
     read_portfolio_data,
@@ -35,7 +36,15 @@ async def get_portfolio_data(
 
 @router.post("/{date}")
 async def create_portfolio_data(
-    date: str, account_type: str = "future", account_number: str = "43037074"
+    date: str, 
+    account_type: str = "future", 
+    account_number: str = "43037074",
+    app_key: Optional[str] = None,
+    app_secret: Optional[str] = None,
+    domain: Optional[str] = None,
+    cano: Optional[str] = None,
+    acnt_prdt_cd: Optional[str] = None,
+    aws_secret_id: Optional[str] = None
 ):
     """
     특정 날짜의 포트폴리오 데이터를 생성합니다.
@@ -45,6 +54,12 @@ async def create_portfolio_data(
         date: 생성할 날짜 (YYYY-MM-DD 형식)
         account_type: 계좌 타입 ("future" 또는 "spot")
         account_number: 계좌번호
+        app_key: KIS API 앱 키
+        app_secret: KIS API 앱 시크릿
+        domain: KIS API 도메인
+        cano: 계좌번호
+        acnt_prdt_cd: 계좌상품코드
+        aws_secret_id: AWS 시크릿 ID
 
     Returns:
         생성된 포트폴리오 데이터
@@ -63,7 +78,17 @@ async def create_portfolio_data(
             status_code=400, detail="Invalid account_type. Use 'future' or 'spot'"
         )
 
-    return await insert_portfolio_data(date, account_type, account_number)
+    return await insert_portfolio_data(
+        date, 
+        account_type, 
+        account_number,
+        app_key,
+        app_secret,
+        domain,
+        cano,
+        acnt_prdt_cd,
+        aws_secret_id
+    )
 
 
 @router.delete("/{date}")

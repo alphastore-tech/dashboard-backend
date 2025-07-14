@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any
 from fastapi import HTTPException
 
 from app.database.connection import get_db_connection
-from app.services.kis_api import KisClient
+from app.services.kisClient import KisClient
 
 
 async def read_portfolio_data(
@@ -58,7 +58,15 @@ async def read_portfolio_data(
 
 
 async def insert_portfolio_data(
-    date: str, account_type: str = "future", account_number: str = "43037074"
+    date: str, 
+    account_type: str = "future", 
+    account_number: str = "43037074",
+    app_key: Optional[str] = None,
+    app_secret: Optional[str] = None,
+    domain: Optional[str] = None,
+    cano: Optional[str] = None,
+    acnt_prdt_cd: Optional[str] = None,
+    aws_secret_id: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     특정 날짜의 포트폴리오 데이터를 삽입합니다.
@@ -68,6 +76,12 @@ async def insert_portfolio_data(
         date: 삽입할 날짜 (YYYY-MM-DD 형식)
         account_type: 계좌 타입 ("future" 또는 "spot")
         account_number: 계좌번호
+        app_key: KIS API 앱 키
+        app_secret: KIS API 앱 시크릿
+        domain: KIS API 도메인
+        cano: 계좌번호
+        acnt_prdt_cd: 계좌상품코드
+        aws_secret_id: AWS 시크릿 ID
 
     Returns:
         삽입된 데이터 딕셔너리
@@ -91,7 +105,14 @@ async def insert_portfolio_data(
             kis_date = date.replace("-", "")
 
             # KisClient 인스턴스 생성
-            client = KisClient()
+            client = KisClient(
+                app_key=app_key,
+                app_secret=app_secret,
+                domain=domain,
+                cano=cano,
+                acnt_prdt_cd=acnt_prdt_cd,
+                aws_secret_id=aws_secret_id
+            )
             futures_data = await client.get_futures_balance_settlement(kis_date)
 
             # 디버깅을 위한 로그
