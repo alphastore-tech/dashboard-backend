@@ -1,0 +1,85 @@
+# .github/workflows/release.yml
+name: Create Release and Tag
+
+# PR → main 브랜치 머지(Closed & Merged) 시 실행
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+# 릴리스/태그를 쓰려면 contents:write 권한이 필요
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: ${{ github.event.pull_request.merged == true }}
+    runs-on: ubuntu-latest
+
+    steps:
+    # ─────────────────────────────────────────────────────────────
+    # 1) 소스 체크아웃 (모든 태그 포함)
+    # ─────────────────────────────────────────────────────────────
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    # ─────────────────────────────────────────────────────────────
+    # 2) 태그 개수로 첫 릴리스 여부 판단
+    #    • 태그가 0개 → 첫 릴리스 0.1.0
+    #    • 태그 ≥1  → 최신 태그에서 패치버전 +1
+    # ─────────────────────────────────────────────────────────────
+    - name: Count existing tags
+      id: tags
+      run: echo "count=$(git tag --list | wc -l)" >> "$GITHUB_OUTPUT"
+
+    # 기존 태그와 다음 패치버전 계산
+    - name: Get previous tag
+      id: prev
+      if: steps.tags.outputs.count != '0'
+      uses: WyriHaximus/github-action-get-previous-tag@v1
+      with:
+        fallback: 0.1.0
+
+    - name: Next patch version
+      id: next
+      if: steps.tags.outputs.count != '0'
+      uses: WyriHaximus/github-action-next-semvers@v1
+      with:
+        version: ${{ steps.prev.outputs.tag }}
+
+    # ─────────────────────────────────────────────────────────────
+    # 3) 최종 태그 결정
+    # ─────────────────────────────────────────────────────────────
+    - name: Set new tag
+      id: newtag
+      run: |
+        if [ "${{ steps.tags.outputs.count }}" = "0" ]; then
+          echo "tag=0.1.0" >> "$GITHUB_OUTPUT"
+        else
+          echo "tag=${{ steps.next.outputs.v_patch }}" >> "$GITHUB_OUTPUT"
+        fi
+
+    # ─────────────────────────────────────────────────────────────
+    # 4) 한국 시간 포매팅
+    # ─────────────────────────────────────────────────────────────
+    - name: Korea time
+      id: kst
+      run: echo "now=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')" >> "$GITHUB_OUTPUT"
+
+    # ─────────────────────────────────────────────────────────────
+    # 5) 릴리스 생성 (자동 릴리스 노트)
+    # ─────────────────────────────────────────────────────────────
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name:     ${{ steps.newtag.outputs.tag }}
+        release_name: ${{ steps.newtag.outputs.tag }}
+        body: |
+          ${{ steps.kst.outputs.now }}
+          Github Action released ${{ steps.newtag.outputs.tag }}
+        generate_release_notes: true              # ← 자동 릴리스 노트  
+        draft:      false                         # true 로 두면 초안 상태
+        prerelease: false
