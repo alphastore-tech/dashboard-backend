@@ -1,0 +1,49 @@
+# .github/workflows/deploy.yml
+name: Deploy to EC2
+
+on:
+  workflow_run:
+    workflows: ["Push Prod Image to Amazon ECR"]    # build-push가 정의된 워크플로우 이름
+    types:
+      - completed
+
+env:
+  AWS_REGION: ap-northeast-2
+  IMAGE_NAME: alphastore/dashboard-backend
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (dummy)
+        uses: actions/checkout@v4
+
+      - name: Load SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Pull & restart container on EC2
+        env:
+          HOST:       ${{ secrets.EC2_HOST }}      # ex) ec2-13-124-252-205.ap-northeast-2.compute.amazonaws.com
+          USER:       ubuntu
+          REGISTRY:   ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          IMAGE:      ${{ env.IMAGE_NAME }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        run: |
+          ssh -o StrictHostKeyChecking=no $USER@$HOST << EOS
+            # 1) ECR 로그인
+            aws ecr get-login-password --region $AWS_REGION \
+              | docker login --username AWS --password-stdin $REGISTRY
+
+            # 2) 최신 이미지 풀
+            docker pull $REGISTRY/$IMAGE:latest
+
+            # 3) compose 디렉터리로 이동해 컨테이너 재시작
+            cd /home/$USER
+            docker compose up -d
+
+            # 4) 불필요한 로컬 이미지 정리
+            docker image prune -f
+          EOS
