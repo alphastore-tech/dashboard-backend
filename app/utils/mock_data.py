@@ -1,7 +1,12 @@
 import random
 from datetime import datetime, timedelta
 from app.services.kisSpotClient import KisSpotClient
+from app.services.kisClient import KisClient
 from app.crud.portfolio import read_portfolio_data
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def random_int(a, b):
@@ -15,7 +20,21 @@ async def generate_daily_pnl(n):
 
     # KIS API에서 데이터 가져오기
     try:
-        client = KisSpotClient()
+        # 환경변수 가져오기
+        app_key = os.getenv("KIS_SPOT_APP_KEY")
+        app_secret = os.getenv("KIS_SPOT_APP_SECRET")
+        cano = os.getenv("KIS_CANO_SPOT")
+        acnt_prdt_cd = os.getenv("KIS_ACNT_PRDT_CD")
+        aws_secret_id = os.getenv("AWS_SECRET_ID_SPOT")
+        
+        
+        client = KisSpotClient(
+            app_key=app_key,
+            app_secret=app_secret,
+            cano=cano,
+            acnt_prdt_cd=acnt_prdt_cd,
+            aws_secret_id=aws_secret_id,
+        )
         start_date = (today - timedelta(days=n - 1)).strftime("%Y%m%d")
         end_date = today.strftime("%Y%m%d")
 
@@ -23,6 +42,12 @@ async def generate_daily_pnl(n):
 
         # API 응답에서 output 데이터 추출
         stock_output_data = api_response.get("output1", [])
+        future_client = KisClient()
+        
+        future_balance = future_client.get_futureoption_balance()
+        print("future_balance", future_balance)
+        
+    
 
         # 날짜 형식 변환하여 포트폴리오 데이터 조회
         portfolio_start_date = (today - timedelta(days=n - 1)).strftime("%Y-%m-%d")
@@ -87,10 +112,10 @@ async def generate_daily_pnl(n):
                 "totalPnl": stock_pnl + future_pnl,
                 "stockPnl": stock_pnl,
                 "futurePnl": future_pnl,
-                "tradeCount": random_int(1, 10) if stock_pnl != 0 else 0,
-                "contangoCount": random_int(0, 3) if stock_pnl != 0 else 0,
-                "backCount": random_int(0, 3) if stock_pnl != 0 else 0,
-                "cashFlow": random_int(-200000, 200000) if stock_pnl != 0 else 0,
+                "tradeCount": 0,
+                "contangoCount": 0,
+                "backCount": 0,
+                "cashFlow": 0,
             }
             res.append(item)
             count += 1
