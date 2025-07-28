@@ -27,7 +27,6 @@ async def generate_daily_pnl(n):
         acnt_prdt_cd = os.getenv("KIS_ACNT_PRDT_CD")
         aws_secret_id = os.getenv("AWS_SECRET_ID_SPOT")
         
-        
         client = KisSpotClient(
             app_key=app_key,
             app_secret=app_secret,
@@ -35,6 +34,7 @@ async def generate_daily_pnl(n):
             acnt_prdt_cd=acnt_prdt_cd,
             aws_secret_id=aws_secret_id,
         )
+        
         start_date = (today - timedelta(days=n - 1)).strftime("%Y%m%d")
         end_date = today.strftime("%Y%m%d")
 
@@ -42,12 +42,15 @@ async def generate_daily_pnl(n):
 
         # API 응답에서 output 데이터 추출
         stock_output_data = api_response.get("output1", [])
+        
         future_client = KisClient()
+        # KIS API에서 잔고 데이터 가져오기
+        balance_data = await future_client.get_futureoption_balance()
+
+        output2 = balance_data.get("output2", {})
+        current_future_pnl = output2.get("futr_trad_pfls_amt", 0)
+        print("current_future_pnl", current_future_pnl)
         
-        future_balance = future_client.get_futureoption_balance()
-        print("future_balance", future_balance)
-        
-    
 
         # 날짜 형식 변환하여 포트폴리오 데이터 조회
         portfolio_start_date = (today - timedelta(days=n - 1)).strftime("%Y-%m-%d")
@@ -85,6 +88,10 @@ async def generate_daily_pnl(n):
                 future_pnl_map[date_str] = (
                     float(futr_trad_pfls_amt) if futr_trad_pfls_amt else 0.0
                 )
+
+        # 오늘 날짜의 선물 손익을 current_future_pnl로 업데이트
+        today_str = today.strftime("%Y-%m-%d")
+        future_pnl_map[today_str] = float(current_future_pnl)
 
     except Exception as e:
         print(f"KIS API 호출 실패: {e}")
