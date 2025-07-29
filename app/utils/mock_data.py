@@ -21,10 +21,10 @@ async def generate_daily_pnl(n):
     # KIS API에서 데이터 가져오기
     try:
         # 환경변수 가져오기
-        app_key = os.getenv("KIS_SPOT_APP_KEY")
-        app_secret = os.getenv("KIS_SPOT_APP_SECRET")
-        cano = os.getenv("KIS_CANO_SPOT")
-        acnt_prdt_cd = os.getenv("KIS_ACNT_PRDT_CD")
+        app_key = os.getenv("NEXT_PUBLIC_KIS_SPOT_APP_KEY")
+        app_secret = os.getenv("NEXT_PUBLIC_KIS_SPOT_APP_SECRET")
+        cano = os.getenv("NEXT_PUBLIC_KIS_SPOT_CANO")
+        acnt_prdt_cd = os.getenv("NEXT_PUBLIC_KIS_ACNT_PRDT_CD")
         aws_secret_id = os.getenv("AWS_SECRET_ID_SPOT")
         
         client = KisSpotClient(
