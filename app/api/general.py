@@ -12,7 +12,7 @@ async def root():
 
 @router.get("/pnl/daily")
 async def get_daily_pnl():
-    return await generate_daily_pnl(30)
+    return await generate_daily_pnl(60)
 
 
 @router.get("/pnl/monthly")
