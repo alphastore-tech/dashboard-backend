@@ -17,7 +17,7 @@ async def get_daily_pnl():
 
 @router.get("/pnl/monthly")
 async def get_monthly_pnl():
-    return generate_monthly_pnl()
+    return await generate_monthly_pnl()
 
 
 @router.get("/performance_metrics")
