@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import portfolio, kis, general
+from app.api import kis, general
 
 app = FastAPI(title="Realized PnL API")
 
@@ -15,5 +15,4 @@ app.add_middleware(
 
 # 라우터 등록
 app.include_router(general.router)
-app.include_router(portfolio.router)
 app.include_router(kis.router)
