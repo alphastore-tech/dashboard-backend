@@ -32,12 +32,10 @@ def get_spot_inquire_balance_daily_profit_endpoint(
         domain=domain,
         cano=cano,
         acnt_prdt_cd=acnt_prdt_cd,
-        aws_secret_id=aws_secret_id
+        aws_secret_id=aws_secret_id,
     )
-    
-    return client.get_spot_balance_daily_profit(
-        start_date, end_date    
-    )
+
+    return client.get_spot_balance_daily_profit(start_date, end_date)
 
 
 @router.get("/futures/balance-settlement")
@@ -61,7 +59,7 @@ async def get_futures_balance_settlement_endpoint(
         domain=domain,
         cano=cano,
         acnt_prdt_cd=acnt_prdt_cd,
-        aws_secret_id=aws_secret_id
+        aws_secret_id=aws_secret_id,
     )
     return await client.get_futures_balance_settlement(
         inqr_dt, ctx_area_fk200, ctx_area_nk200
@@ -96,7 +94,7 @@ async def get_futureoption_balance_endpoint(
         domain=domain,
         cano=cano,
         acnt_prdt_cd=acnt_prdt_cd,
-        aws_secret_id=aws_secret_id
+        aws_secret_id=aws_secret_id,
     )
     return await client.get_futureoption_balance(
         mgna_dvsn, excc_stat_cd, ctx_area_fk200, ctx_area_nk200
@@ -127,46 +125,5 @@ async def create_daily_future_balance(
         삽입된 데이터
     """
     return await insert_daily_future_balance(
-        app_key,
-        app_secret,
-        domain,
-        cano,
-        acnt_prdt_cd,
-        aws_secret_id
+        app_key, app_secret, domain, cano, acnt_prdt_cd, aws_secret_id
     )
-
-
-# @router.get("/daily-future-balance/{date}")
-# async def get_daily_future_balance(date: str):
-#     """
-#     특정 날짜의 선물옵션 잔고 데이터를 조회합니다.
-
-#     Args:
-#         date: 조회할 날짜 (YYYY-MM-DD 형식)
-
-#     Returns:
-#         잔고 데이터 또는 404 에러
-#     """
-#     data = await read_daily_future_balance(date)
-#     if data is None:
-#         from fastapi import HTTPException
-
-#         raise HTTPException(
-#             status_code=404,
-#             detail=f"No daily future balance data found for date: {date}",
-#         )
-#     return data
-
-
-# @router.delete("/daily-future-balance/{date}")
-# async def remove_daily_future_balance(date: str):
-#     """
-#     특정 날짜의 선물옵션 잔고 데이터를 삭제합니다.
-
-#     Args:
-#         date: 삭제할 날짜 (YYYY-MM-DD 형식)
-
-#     Returns:
-#         삭제 결과 메시지
-#     """
-#     return await delete_daily_future_balance(date)
